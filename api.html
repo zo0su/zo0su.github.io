@@ -4,20 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API</title>
+    <style>
+        /* 스타일을 추가합니다. */
+        #results {
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 10px;
+        }
+        img {
+            max-width: 100px;
+            max-height: 150px;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
 </head>
 <body>
-    <h1>API</h1>
+    <h1>카카오 도서 검색</h1>
     <input id="search" type="text" />
     <button id="submit">검색</button>
-    <br />
+    <div id="results">
+        <!-- 검색 결과를 표시할 div를 추가합니다. -->
+    </div>
     <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script>
         $("#submit").click(function() {
-            // 검색어를 가져오고 URL을 구성합니다.
             var searchKeyword = $("#search").val();
             var apiUrl = "https://dapi.kakao.com/v3/search/book?target=title&query=" + searchKeyword;
-            
-            // Ajax 요청을 보냅니다.
             $.ajax({
                 method: "GET",
                 url: apiUrl,
@@ -26,20 +48,23 @@
                 }
             })
             .done(function(data) {
-                // 검색 결과가 있는지 확인합니다.
                 if (data.documents && data.documents.length > 0) {
-                    // 이미지와 제목을 표시할 요소를 생성합니다.
-                    var titleElement = $("<span>" + data.documents[0].title + "</span>");
-                    var imgElement = $("<img src='" + data.documents[0].thumbnail + "'/>");
+                    // 결과를 테이블로 표시합니다.
+                    var resultTable = "<table>";
+                    resultTable += "<tr><th>이미지</th><th>제목</th></tr>";
+                    for (var i = 0; i < data.documents.length; i++) {
+                        var document = data.documents[i];
+                        resultTable += "<tr>";
+                        resultTable += "<td><img src='" + document.thumbnail + "'/></td>";
+                        resultTable += "<td>" + document.title + "</td>";
+                        resultTable += "</tr>";
+                    }
+                    resultTable += "</table>";
                     
-                    // 생성된 요소를 body에 추가합니다.
-                    $("body").append(titleElement);
-                    $("body").append(imgElement);
-                    
-                    console.log(data.documents[0].title);
-                    console.log(data.documents[0].thumbnail);
+                    // 결과를 results div에 추가합니다.
+                    $("#results").html(resultTable);
                 } else {
-                    console.log("검색 결과가 없습니다.");
+                    $("#results").html("검색 결과가 없습니다.");
                 }
             });
         });
