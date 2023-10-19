@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API</title>
+</head>
+<body>
+    <h1>API</h1>
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <script>
+        $.ajax({
+            method: "GET",
+            url: "https://dapi.kakao.com/v3/search/book?target=title&query=미움 받을 용기",
+            headers: {
+                "Authorization": "KakaoAK 98783e5158b14a13f9c3b80f76212bef"
+            }
+        })
+        .done(function(data) {
+            // 이미지와 제목을 표시할 요소를 생성합니다.
+            var titleElement = $("<span>" + data.documents[0].title + "</span>");
+            var imgElement = $("<img src='" + data.documents[0].thumbnail + "'/>");
+            
+            // 생성된 요소를 body에 추가합니다.
+            $("body").append(titleElement);
+            $("body").append(imgElement);
+            
+            console.log(data.documents[0].title);
+            console.log(data.documents[0].thumbnail);
+        });
+    </script>
+</body>
+</html>
