@@ -1,11 +1,46 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>여행지리_파이썬실습_테스트</title>
-    <meta http-equiv="refresh" content="0; url=https://python.dongyanghs.synology.me"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zo0su의 웹사이트</title>
+    <link rel="stylesheet" href="style.css">
+    <script defer src="script.js"></script>
 </head>
 <body>
-    <p>If you are not redirected automatically, follow this <a href="https://python.dongyanghs.synology.me">link</a>.</p>
+    <header>
+        <h1>Zo0su의 웹사이트</h1>
+        <nav>
+            <ul>
+                <li><a href="#home">홈</a></li>
+                <li><a href="#about">소개</a></li>
+                <li><a href="#contact">연락하기</a></li>
+            </ul>
+        </nav>
+        <button id="theme-toggle">🌙 다크모드</button>
+    </header>
+
+    <main>
+        <section id="home" class="fade-in">
+            <h2>환영합니다 👋</h2>
+            <p>조영수의 테스트 웹사이트입니다.</p>
+            <button id="clickBtn">클릭해보세요</button>
+        </section>
+
+        <section id="about" class="fade-in">
+            <h2>소개</h2>
+            <p>이 웹사이트는 HTML, CSS, JavaScript로 제작된 간단한 반응형 웹사이트입니다.</p>
+        </section>
+
+        <section id="contact" class="fade-in">
+            <h2>연락하기</h2>
+            <p>도메인: <strong>zo0su.kor.kr</strong></p>
+            <p>IP 주소: <strong>3.37.22.179</strong></p>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2025 Zo0su | Powered by AWS EC2 (Ubuntu)</p>
+    </footer>
 </body>
 </html>
-https://python.dongyanghs.synology.me
