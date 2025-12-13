@@ -1,5 +1,5 @@
 // Apps Script 웹 앱 URL
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxc7ljV5q4j3Yt2YlkJ332vsPBBtr0rl2Ni9kmrJkp1Z-_PMEeBZAWMJrPlnZsULmjw3w/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyqleBLvykSlhBdpywskcEopnrhk91UC2CspmoUdQ3xbPwNoeZ9RKG4vGHK5ph6m6TrRg/exec';
 const ADMIN_PASSWORD = '1234';
 
 // 화면 전환 함수
@@ -362,4 +362,5 @@ async function downloadCSV() {
     link.click();
     document.body.removeChild(link);
 }
+
 
