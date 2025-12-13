@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>부산교사오케스트라 단원등록</title>
+    <link rel="stylesheet" href="styles.css?v=2">
+</head>
+<body>
+    <!-- 첫 화면 -->
+    <div id="mainScreen" class="screen active">
+        <div class="container">
+            <div class="icon-container">
+                <div class="staff-icon">🎼</div>
+            </div>
+            <h1 class="title">부산교사오케스트라 단원등록</h1>
+            <div class="button-group">
+                <button id="registerBtn" class="btn btn-primary">2026 단원등록</button>
+                <button id="listBtn" class="btn btn-primary">단원 리스트</button>
+                <button id="adminBtn" class="btn btn-primary">관리자 모드</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 회원 등록 화면 -->
+    <div id="registerScreen" class="screen">
+        <div class="container">
+            <h2 class="title">2026 단원등록</h2>
+            <form id="membershipForm">
+                <div class="form-group">
+                    <label for="name">성명 <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="educationOffice">소속교육청 <span class="required">*</span></label>
+                    <select id="educationOffice" name="educationOffice" required>
+                        <option value="">선택하세요</option>
+                        <option value="시교육청">시교육청</option>
+                        <option value="남부">남부</option>
+                        <option value="동래">동래</option>
+                        <option value="북부">북부</option>
+                        <option value="서부">서부</option>
+                        <option value="해운대">해운대</option>
+                        <option value="해당없음">해당없음</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="school2026">2026년도 학교 <span class="required">*</span></label>
+                    <input type="text" id="school2026" name="school2026" placeholder="해당없음 또는 퇴직특별회원 입력" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="part">파트 <span class="required">*</span></label>
+                    <select id="part" name="part" required>
+                        <option value="">선택하세요</option>
+                        <option value="1바이올린">1바이올린</option>
+                        <option value="2바이올린">2바이올린</option>
+                        <option value="플룻">플룻</option>
+                        <option value="첼로">첼로</option>
+                        <option value="비올라">비올라</option>
+                        <option value="클라리넷">클라리넷</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">휴대전화 <span class="required">*</span></label>
+                    <input type="tel" id="phone" name="phone" placeholder="01012345678" pattern="[0-9]{11}" required>
+                    <small class="hint">하이픈 없이 숫자만 입력하세요 (예: 01012345678)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="carNumber">차량번호 <span class="required">*</span></label>
+                    <input type="text" id="carNumber" name="carNumber" placeholder="번호판과 동일하게 입력" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="carDay">차량요일제 <span class="required">*</span></label>
+                    <select id="carDay" name="carDay" required>
+                        <option value="">선택하세요</option>
+                        <option value="해당없음">해당없음</option>
+                        <option value="월">월</option>
+                        <option value="화">화</option>
+                        <option value="수">수</option>
+                        <option value="목">목</option>
+                        <option value="금">금</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="partPosition2026">2026년 파트직책 <span class="required">*</span></label>
+                    <select id="partPosition2026" name="partPosition2026" required>
+                        <option value="">선택하세요</option>
+                        <option value="해당없음">해당없음</option>
+                        <option value="파트장">파트장</option>
+                        <option value="파트총무">파트총무</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="joinDate">입단시기 <span class="required">*</span></label>
+                    <select id="joinDate" name="joinDate" required>
+                        <option value="">선택하세요</option>
+                        <option value="2026">2026</option>
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                        <option value="2021">2021</option>
+                        <option value="2020이전">2020이전</option>
+                    </select>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">제출</button>
+                    <button type="button" id="cancelRegisterBtn" class="btn btn-secondary">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 제출 확인 화면 -->
+    <div id="confirmScreen" class="screen">
+        <div class="container">
+            <h2 class="title">제출 내용 확인</h2>
+            <div id="confirmContent" class="confirm-content"></div>
+            <div class="button-group">
+                <button id="backToMainBtn" class="btn btn-primary">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 단원 리스트 화면 -->
+    <div id="listScreen" class="screen">
+        <div class="container">
+            <h2 class="title">단원 리스트</h2>
+            <div id="memberList" class="member-list"></div>
+            <div class="button-group">
+                <button id="backToListBtn" class="btn btn-primary">돌아가기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 관리자 모드 비밀번호 입력 -->
+    <div id="adminPasswordScreen" class="screen">
+        <div class="container">
+            <h2 class="title">관리자 모드</h2>
+            <div class="form-group">
+                <label for="adminPassword">비밀번호</label>
+                <input type="password" id="adminPassword" name="adminPassword" placeholder="비밀번호를 입력하세요">
+            </div>
+            <div class="button-group">
+                <button id="adminLoginBtn" class="btn btn-primary">로그인</button>
+                <button id="cancelAdminBtn" class="btn btn-secondary">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 관리자 모드 화면 -->
+    <div id="adminScreen" class="screen">
+        <div class="container">
+            <h2 class="title">관리자 모드</h2>
+            <div id="adminContent" class="admin-content">
+                <div class="button-group">
+                    <button id="refreshDataBtn" class="btn btn-primary">데이터 새로고침</button>
+                    <button id="downloadCsvBtn" class="btn btn-primary">CSV 다운로드</button>
+                </div>
+                <div id="adminData" class="admin-data"></div>
+            </div>
+            <div class="button-group">
+                <button id="backToAdminMainBtn" class="btn btn-primary">돌아가기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 중복 제출 확인 모달 -->
+    <div id="duplicateModal" class="modal">
+        <div class="modal-content">
+            <h3>이미 제출하셨습니다.</h3>
+            <p>수정하시겠습니까?</p>
+            <div class="button-group">
+                <button id="yesEditBtn" class="btn btn-primary">예</button>
+                <button id="noEditBtn" class="btn btn-secondary">아니오</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=2"></script>
+</body>
+</html>
