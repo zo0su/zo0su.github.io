@@ -22,6 +22,110 @@ function formatPhoneNumber(phone) {
     return phone;
 }
 
+// 영문을 한글로 변환 (한글 자판 기준, 차량번호용)
+function convertEnglishToKorean(text) {
+    // 차량번호에 자주 사용되는 한글 자판 매핑 (한글 두벌식 기준)
+    // 예: 'th' → '소', 'tn' → '구', 'gk' → '하' 등
+    const engToKorMap = {
+        // 2자 조합 (가장 많이 사용)
+        'th': '소', 'tn': '구', 'gk': '하',
+        'dk': '아', 'qk': '바', 'tk': '사',
+        'wk': '자', 'dj': '어', 'wj': '저',
+        'sh': '노', 'dh': '오', 'eh': '도',
+        'fh': '로', 'ah': '모', 'qh': '보',
+        'gh': '호', 'wh': '주', 'rl': '고',
+        'rt': '과', 'rb': '교',
+        // 단일 문자 (한글 자판 기준)
+        't': 'ㅅ', 'n': 'ㅜ', 'g': 'ㅎ',
+        'd': 'ㅇ', 'q': 'ㅂ', 's': 'ㄴ',
+        'w': 'ㅈ', 'e': 'ㄷ', 'r': 'ㄱ',
+        'f': 'ㄹ', 'a': 'ㅁ', 'k': 'ㅏ',
+        'h': 'ㅗ', 'j': 'ㅓ', 'y': 'ㅛ',
+        'u': 'ㅕ', 'i': 'ㅑ', 'o': 'ㅐ',
+        'p': 'ㅔ', 'l': 'ㅣ', 'z': 'ㅋ',
+        'x': 'ㅌ', 'c': 'ㅊ', 'v': 'ㅍ',
+        'b': 'ㅠ', 'm': 'ㅡ'
+    };
+    
+    let result = '';
+    let i = 0;
+    
+    while (i < text.length) {
+        const char = text[i];
+        
+        // 숫자는 그대로 유지
+        if (/\d/.test(char)) {
+            result += char;
+            i++;
+            continue;
+        }
+        
+        // 이미 한글이면 그대로 유지
+        if (/[가-힣]/.test(char)) {
+            result += char;
+            i++;
+            continue;
+        }
+        
+        // 영문인 경우 한글로 변환
+        if (/[a-zA-Z]/.test(char)) {
+            // 2자 조합 먼저 시도
+            let matched = false;
+            if (i + 1 < text.length && /[a-zA-Z]/.test(text[i + 1])) {
+                const twoChar = (char + text[i + 1]).toLowerCase();
+                if (engToKorMap[twoChar]) {
+                    result += engToKorMap[twoChar];
+                    i += 2;
+                    matched = true;
+                }
+            }
+            
+            if (!matched) {
+                // 단일 문자 변환 (한글 자판 자모)
+                const lowerChar = char.toLowerCase();
+                const korChar = engToKorMap[lowerChar];
+                if (korChar) {
+                    result += korChar;
+                } else {
+                    result += char; // 매핑 없는 경우 그대로
+                }
+                i++;
+            }
+        } else {
+            // 특수문자 등은 그대로
+            result += char;
+            i++;
+        }
+    }
+    
+    return result;
+}
+
+// 차량번호 입력 시 영문을 한글로 변환
+function setupCarNumberConverter() {
+    const carNumberInput = document.getElementById('carNumber');
+    if (!carNumberInput) return;
+    
+    carNumberInput.addEventListener('input', function(e) {
+        const input = e.target;
+        const currentValue = input.value;
+        const cursorPos = input.selectionStart;
+        
+        // 영문이 포함되어 있으면 한글로 변환
+        if (/[a-zA-Z]/.test(currentValue)) {
+            const converted = convertEnglishToKorean(currentValue);
+            if (converted !== currentValue) {
+                input.value = converted;
+                // 커서 위치 복원
+                setTimeout(() => {
+                    const newPos = Math.min(cursorPos, converted.length);
+                    input.setSelectionRange(newPos, newPos);
+                }, 0);
+            }
+        }
+    });
+}
+
 // 전화번호로 중복 체크
 async function checkDuplicate(phone) {
     try {
@@ -140,6 +244,9 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         await handleFormSubmit();
     });
+    
+    // 차량번호 영문→한글 변환 설정
+    setupCarNumberConverter();
 });
 
 // 폼 제출 처리
@@ -406,4 +513,3 @@ async function downloadCSV() {
     link.click();
     document.body.removeChild(link);
 }
-
