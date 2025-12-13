@@ -1,196 +1,267 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>부산교사오케스트라 단원등록</title>
-    <link rel="stylesheet" href="styles.css?v=2">
-</head>
-<body>
-    <!-- 첫 화면 -->
-    <div id="mainScreen" class="screen active">
-        <div class="container">
-            <div class="icon-container">
-                <div class="staff-icon">🎼</div>
-            </div>
-            <h1 class="title">부산교사오케스트라 단원등록</h1>
-            <div class="button-group">
-                <button id="registerBtn" class="btn btn-primary">2026 단원등록</button>
-                <button id="listBtn" class="btn btn-primary">단원 리스트</button>
-                <button id="adminBtn" class="btn btn-primary">관리자 모드</button>
-            </div>
-        </div>
-    </div>
+// Apps Script 웹 앱 URL
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz9xi5a9s-p6_U9UrT8h34SqcuWiruCWf3sNavw2Z-qQGhhr5iFg09sJJXmw0kNkbp6qw/exec';
+const ADMIN_PASSWORD = '1234';
 
-    <!-- 회원 등록 화면 -->
-    <div id="registerScreen" class="screen">
-        <div class="container">
-            <h2 class="title">2026 단원등록</h2>
-            <form id="membershipForm">
-                <div class="form-group">
-                    <label for="name">성명 <span class="required">*</span></label>
-                    <input type="text" id="name" name="name" required>
-                </div>
+// 화면 전환
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById(screenId);
+    if (target) target.classList.add('active');
+}
 
-                <div class="form-group">
-                    <label for="educationOffice">소속교육청 <span class="required">*</span></label>
-                    <select id="educationOffice" name="educationOffice" required>
-                        <option value="">선택하세요</option>
-                        <option value="시교육청">시교육청</option>
-                        <option value="남부">남부</option>
-                        <option value="동래">동래</option>
-                        <option value="북부">북부</option>
-                        <option value="서부">서부</option>
-                        <option value="해운대">해운대</option>
-                        <option value="해당없음">해당없음</option>
-                    </select>
-                </div>
+// 전화번호 포맷팅 (010-1234-5678)
+function formatPhoneNumber(phone) {
+    const cleaned = phone.replace(/\D/g, '');
+    return cleaned.length === 11 ? cleaned.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3') : phone;
+}
 
-                <div class="form-group">
-                    <label for="school2026">2026년도 학교 <span class="required">*</span></label>
-                    <input type="text" id="school2026" name="school2026" placeholder="학교명 / 해당없음 / 퇴직특별회원 입력" required>
-                </div>
+// 전화번호 실시간 하이픈 포맷팅
+function setupPhoneNumberFormatter() {
+    const input = document.getElementById('phone');
+    if (!input) return;
+    
+    input.addEventListener('input', function(e) {
+        const inputEl = e.target;
+        const cursorPos = inputEl.selectionStart;
+        const oldValue = inputEl.value;
+        let value = oldValue.replace(/\D/g, '').slice(0, 11);
+        let formatted = value;
+        
+        if (value.length > 7) formatted = `${value.slice(0, 3)}-${value.slice(3, 7)}-${value.slice(7)}`;
+        else if (value.length > 3) formatted = `${value.slice(0, 3)}-${value.slice(3)}`;
+        
+        if (oldValue !== formatted) {
+            inputEl.value = formatted;
+            const beforeDash = oldValue.substring(0, cursorPos).replace(/\D/g, '').length;
+            let newPos = cursorPos;
+            if (beforeDash === 3 && value.length > 3) newPos++;
+            else if (beforeDash === 7 && value.length > 7) newPos++;
+            setTimeout(() => inputEl.setSelectionRange(Math.min(newPos, formatted.length), Math.min(newPos, formatted.length)), 0);
+        }
+    });
+    
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && e.target.selectionStart > 0 && e.target.value[e.target.selectionStart - 1] === '-') {
+            e.preventDefault();
+            const pos = e.target.selectionStart - 2;
+            e.target.value = e.target.value.substring(0, pos) + e.target.value.substring(e.target.selectionStart);
+            e.target.setSelectionRange(pos, pos);
+        }
+    });
+}
 
-                <div class="form-group">
-                    <label for="part">파트 <span class="required">*</span></label>
-                    <select id="part" name="part" required>
-                        <option value="">선택하세요</option>
-                        <option value="1바이올린">1바이올린</option>
-                        <option value="2바이올린">2바이올린</option>
-                        <option value="플룻">플룻</option>
-                        <option value="첼로">첼로</option>
-                        <option value="비올라">비올라</option>
-                        <option value="클라리넷">클라리넷</option>
-                        <option value="기타">기타</option>
-                    </select>
-                </div>
+// 데이터 가져오기 (공통)
+async function fetchData(action = 'getAll') {
+    try {
+        const response = await fetch(`${APPS_SCRIPT_URL}?action=${action}`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.success ? (data.members || []) : [];
+        }
+    } catch (error) {
+        console.error('데이터 가져오기 오류:', error);
+    }
+    return [];
+}
 
-                <div class="form-group">
-                    <label for="phone">휴대전화 <span class="required">*</span></label>
-                    <input type="tel" id="phone" name="phone" placeholder="01012345678" pattern="[0-9]{11}" required>
-                    <small class="hint">하이픈 없이 숫자만 입력하세요 (예: 01012345678)</small>
-                </div>
+// 전화번호 중복 체크
+async function checkDuplicate(phone) {
+    const members = await fetchData();
+    const cleaned = phone.replace(/\D/g, '');
+    return members.some(m => (m[4] || '').replace(/\D/g, '') === cleaned);
+}
 
-                <div class="form-group">
-                    <label for="carNumber">차량번호 <span class="required">*</span></label>
-                    <input type="text" id="carNumber" name="carNumber" placeholder="번호판과 동일하게 입력" required>
-                </div>
+// 모든 회원 데이터 가져오기
+async function getAllMembers() {
+    return await fetchData();
+}
 
-                <div class="form-group">
-                    <label for="carDay">차량요일제 <span class="required">*</span></label>
-                    <select id="carDay" name="carDay" required>
-                        <option value="">선택하세요</option>
-                        <option value="해당없음">해당없음</option>
-                        <option value="월">월</option>
-                        <option value="화">화</option>
-                        <option value="수">수</option>
-                        <option value="목">목</option>
-                        <option value="금">금</option>
-                    </select>
-                </div>
+// 이벤트 리스너 설정
+document.addEventListener('DOMContentLoaded', function() {
+    // 화면 전환 버튼들
+    const screenButtons = {
+        'registerBtn': () => { document.getElementById('membershipForm').reset(); showScreen('registerScreen'); },
+        'listBtn': async () => { showScreen('listScreen'); await loadMemberList(); },
+        'adminBtn': () => { document.getElementById('adminPassword').value = ''; showScreen('adminPasswordScreen'); },
+        'cancelRegisterBtn': () => showScreen('mainScreen'),
+        'cancelAdminBtn': () => showScreen('mainScreen'),
+        'backToMainBtn': () => showScreen('mainScreen'),
+        'backToListBtn': () => showScreen('mainScreen'),
+        'backToAdminMainBtn': () => showScreen('mainScreen'),
+        'refreshDataBtn': () => loadAdminData(),
+        'downloadCsvBtn': () => downloadCSV()
+    };
+    
+    Object.entries(screenButtons).forEach(([id, handler]) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('click', handler);
+    });
+    
+    // 관리자 로그인
+    document.getElementById('adminLoginBtn').addEventListener('click', async () => {
+        if (document.getElementById('adminPassword').value === ADMIN_PASSWORD) {
+            showScreen('adminScreen');
+            await loadAdminData();
+        } else {
+            alert('비밀번호가 올바르지 않습니다.');
+        }
+    });
+    
+    // 중복 확인 모달
+    document.getElementById('yesEditBtn').addEventListener('click', () => {
+        document.getElementById('duplicateModal').classList.remove('active');
+        showScreen('registerScreen');
+    });
+    document.getElementById('noEditBtn').addEventListener('click', () => {
+        document.getElementById('duplicateModal').classList.remove('active');
+        showScreen('mainScreen');
+    });
+    
+    // 폼 제출
+    document.getElementById('membershipForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await handleFormSubmit();
+    });
+    
+    setupPhoneNumberFormatter();
+});
 
-                <div class="form-group">
-                    <label for="partPosition2026">2026년 파트직책 <span class="required">*</span></label>
-                    <select id="partPosition2026" name="partPosition2026" required>
-                        <option value="">선택하세요</option>
-                        <option value="해당없음">해당없음</option>
-                        <option value="파트장">파트장</option>
-                        <option value="파트총무">파트총무</option>
-                        <option value="기타">기타</option>
-                    </select>
-                </div>
+// 폼 제출 처리
+async function handleFormSubmit() {
+    const form = document.getElementById('membershipForm');
+    const formData = new FormData(form);
+    const phone = formData.get('phone');
+    const phoneCleaned = phone.replace(/\D/g, '');
+    
+    // 전화번호 유효성 검사
+    if (phoneCleaned.length !== 11 || !phoneCleaned.startsWith('010')) {
+        alert('휴대전화 번호를 올바르게 입력하세요. (010으로 시작하는 11자리 숫자)');
+        return;
+    }
+    
+    // 중복 체크
+    if (await checkDuplicate(phone)) {
+        document.getElementById('duplicateModal').classList.add('active');
+        return;
+    }
+    
+    // 데이터 준비
+    const data = {
+        name: formData.get('name'),
+        educationOffice: formData.get('educationOffice'),
+        school2026: formData.get('school2026'),
+        part: formData.get('part'),
+        phone: formatPhoneNumber(phone),
+        carNumber: formData.get('carNumber'),
+        carDay: formData.get('carDay'),
+        partPosition2026: formData.get('partPosition2026'),
+        joinDate: formData.get('joinDate')
+    };
+    
+    // Apps Script로 전송
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = '제출 중...';
+    
+    try {
+        const response = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+            redirect: 'follow'
+        });
+        
+        let responseData;
+        try {
+            const text = await response.text();
+            responseData = JSON.parse(text);
+        } catch (e) {
+            responseData = { success: false, error: '응답 파싱 오류: ' + e.message };
+        }
+        
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+        
+        if (responseData?.success) {
+            showConfirmScreen(data);
+            console.log('✅ 데이터 전송 성공:', responseData);
+        } else {
+            const errorMsg = responseData?.error || responseData?.message || (response.status ? `HTTP ${response.status}` : '알 수 없는 오류');
+            console.error('❌ 데이터 전송 실패:', { status: response.status, response: responseData });
+            alert(`데이터 저장에 실패했습니다.\n\n오류: ${errorMsg}\n\n브라우저 콘솔(F12)을 확인하거나 다시 시도해주세요.`);
+        }
+    } catch (error) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+        console.error('❌ 제출 오류:', error);
+        
+        const errorMsg = (error.name === 'TypeError' && error.message.includes('fetch'))
+            ? 'Apps Script 서버에 연결할 수 없습니다.\n\n확인 사항:\n1. Apps Script 웹앱이 "모든 사용자" 권한으로 배포되었는지 확인\n2. 인터넷 연결 확인\n3. 브라우저 콘솔(F12)에서 자세한 오류 확인'
+            : `오류: ${error.message || error.toString()}`;
+        alert(`제출 중 오류가 발생했습니다.\n\n${errorMsg}\n\n브라우저 개발자 도구(F12 > Console)를 확인하세요.`);
+    }
+}
 
-                <div class="form-group">
-                    <label for="joinDate">입단시기 <span class="required">*</span></label>
-                    <select id="joinDate" name="joinDate" required>
-                        <option value="">선택하세요</option>
-                        <option value="2026">2026</option>
-                        <option value="2025">2025</option>
-                        <option value="2024">2024</option>
-                        <option value="2023">2023</option>
-                        <option value="2022">2022</option>
-                        <option value="2021">2021</option>
-                        <option value="2020이전">2020이전</option>
-                    </select>
-                </div>
+// 확인 화면 표시
+function showConfirmScreen(data) {
+    const fields = ['성명', '소속교육청', '2026년도 학교', '파트', '휴대전화', '차량번호', '차량요일제', '2026년 파트직책', '입단시기'];
+    const values = [data.name, data.educationOffice, data.school2026, data.part, data.phone, data.carNumber, data.carDay, data.partPosition2026, data.joinDate];
+    
+    document.getElementById('confirmContent').innerHTML = fields.map((f, i) => `<p><strong>${f}:</strong> ${values[i]}</p>`).join('') +
+        '<div class="message success" style="margin-top: 20px;">연습일에 뵙겠습니다.</div>';
+    showScreen('confirmScreen');
+}
 
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">제출</button>
-                    <button type="button" id="cancelRegisterBtn" class="btn btn-secondary">취소</button>
-                </div>
-            </form>
-        </div>
-    </div>
+// 단원 리스트 로드
+async function loadMemberList() {
+    const memberList = document.getElementById('memberList');
+    memberList.innerHTML = '<div class="loading">로딩 중...</div>';
+    const members = await getAllMembers();
+    memberList.innerHTML = members.length === 0 
+        ? '<p style="text-align: center; padding: 20px;">등록된 단원이 없습니다.</p>'
+        : members.map(m => `<div class="member-item"><div class="member-name">${m[0] || ''}</div><div class="member-part">${m[3] || ''}</div></div>`).join('');
+}
 
-    <!-- 제출 확인 화면 -->
-    <div id="confirmScreen" class="screen">
-        <div class="container">
-            <h2 class="title">제출 내용 확인</h2>
-            <div id="confirmContent" class="confirm-content"></div>
-            <div class="button-group">
-                <button id="backToMainBtn" class="btn btn-primary">확인</button>
-            </div>
-        </div>
-    </div>
+// 관리자 데이터 로드
+async function loadAdminData() {
+    const adminData = document.getElementById('adminData');
+    adminData.innerHTML = '<div class="loading">로딩 중...</div>';
+    const members = await getAllMembers();
+    
+    if (members.length === 0) {
+        adminData.innerHTML = '<p style="text-align: center; padding: 20px;">등록된 데이터가 없습니다.</p>';
+        return;
+    }
+    
+    const headers = ['번호', '성명', '소속교육청', '2026년도 학교', '파트', '휴대전화', '차량번호', '차량요일제', '2026년 파트직책', '입단시기'];
+    const headerRow = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+    const bodyRows = members.map((m, i) => `<tr><td>${i + 1}</td>${Array.from({length: 9}, (_, j) => `<td>${m[j] || ''}</td>`).join('')}</tr>`).join('');
+    
+    adminData.innerHTML = `<table class="admin-table"><thead>${headerRow}</thead><tbody>${bodyRows}</tbody></table>`;
+}
 
-    <!-- 단원 리스트 화면 -->
-    <div id="listScreen" class="screen">
-        <div class="container">
-            <h2 class="title">단원 리스트</h2>
-            <div id="memberList" class="member-list"></div>
-            <div class="button-group">
-                <button id="backToListBtn" class="btn btn-primary">돌아가기</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 관리자 모드 비밀번호 입력 -->
-    <div id="adminPasswordScreen" class="screen">
-        <div class="container">
-            <h2 class="title">관리자 모드</h2>
-            <div class="form-group">
-                <label for="adminPassword">비밀번호</label>
-                <input type="password" id="adminPassword" name="adminPassword" placeholder="비밀번호를 입력하세요">
-            </div>
-            <div class="button-group">
-                <button id="adminLoginBtn" class="btn btn-primary">로그인</button>
-                <button id="cancelAdminBtn" class="btn btn-secondary">취소</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 관리자 모드 화면 -->
-    <div id="adminScreen" class="screen">
-        <div class="container">
-            <h2 class="title">관리자 모드</h2>
-            <div id="adminContent" class="admin-content">
-                <div class="button-group">
-                    <button id="refreshDataBtn" class="btn btn-primary">데이터 새로고침</button>
-                    <button id="downloadCsvBtn" class="btn btn-primary">CSV 다운로드</button>
-                </div>
-                <div id="adminData" class="admin-data"></div>
-            </div>
-            <div class="button-group">
-                <button id="backToAdminMainBtn" class="btn btn-primary">돌아가기</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 중복 제출 확인 모달 -->
-    <div id="duplicateModal" class="modal">
-        <div class="modal-content">
-            <h3>이미 제출하셨습니다.</h3>
-            <p>수정하시겠습니까?</p>
-            <div class="button-group">
-                <button id="yesEditBtn" class="btn btn-primary">예</button>
-                <button id="noEditBtn" class="btn btn-secondary">아니오</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="script.js?v=2"></script>
-</body>
-</html>
+// CSV 다운로드
+async function downloadCSV() {
+    const members = await getAllMembers();
+    if (members.length === 0) {
+        alert('다운로드할 데이터가 없습니다.');
+        return;
+    }
+    
+    const headers = ['성명', '소속교육청', '2026년도 학교', '파트', '휴대전화', '차량번호', '차량요일제', '2026년 파트직책', '입단시기'];
+    const escapeCsv = (cell) => {
+        const val = cell || '';
+        return (val.includes(',') || val.includes('"') || val.includes('\n')) ? `"${val.replace(/"/g, '""')}"` : val;
+    };
+    
+    const csvContent = '\uFEFF' + headers.join(',') + '\n' + members.map(m => m.map(escapeCsv).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `btoMembership_${new Date().toISOString().split('T')[0]}.csv`;
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
