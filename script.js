@@ -170,23 +170,54 @@ async function handleFormSubmit() {
 
     // Apps Script로 전송
     try {
-        // Google Apps Script는 POST 요청에 대해 리다이렉트를 수행하므로
-        // 먼저 데이터를 전송하고, 성공으로 간주하여 확인 화면 표시
-        fetch(APPS_SCRIPT_URL, {
+        // 제출 중 표시
+        const submitButton = form.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = '제출 중...';
+
+        const response = await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(data)
-        }).catch(() => {
-            // 네트워크 오류는 무시 (Apps Script의 리다이렉트 특성상)
+            body: JSON.stringify(data),
+            redirect: 'follow' // 리다이렉트를 따라가도록 설정
         });
 
-        // 데이터 전송 후 확인 화면 표시
-        showConfirmScreen(data);
+        // 응답 처리
+        let responseData;
+        try {
+            responseData = await response.json();
+        } catch (e) {
+            // JSON 파싱 실패 시 텍스트로 시도
+            const text = await response.text();
+            console.log('응답 텍스트:', text);
+            responseData = { success: response.ok, message: text };
+        }
+
+        // 버튼 상태 복원
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+
+        if (response.ok && responseData.success) {
+            // 성공 시 확인 화면 표시
+            showConfirmScreen(data);
+            console.log('데이터 전송 성공:', responseData);
+        } else {
+            // 실패 시 에러 메시지 표시
+            const errorMessage = responseData.error || responseData.message || '알 수 없는 오류가 발생했습니다.';
+            console.error('데이터 전송 실패:', errorMessage);
+            alert('데이터 저장에 실패했습니다.\n오류: ' + errorMessage + '\n\n다시 시도해주세요.');
+        }
     } catch (error) {
+        // 버튼 상태 복원
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = false;
+        submitButton.textContent = '제출';
+
         console.error('제출 오류:', error);
-        alert('제출 중 오류가 발생했습니다. 다시 시도해주세요.');
+        alert('제출 중 오류가 발생했습니다.\n오류: ' + error.message + '\n\n네트워크 연결을 확인하고 다시 시도해주세요.');
     }
 }
 
