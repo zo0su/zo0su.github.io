@@ -1,5 +1,5 @@
 // Apps Script 웹 앱 URL
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyqleBLvykSlhBdpywskcEopnrhk91UC2CspmoUdQ3xbPwNoeZ9RKG4vGHK5ph6m6TrRg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxc7ljV5q4j3Yt2YlkJ332vsPBBtr0rl2Ni9kmrJkp1Z-_PMEeBZAWMJrPlnZsULmjw3w/exec';
 const ADMIN_PASSWORD = '1234';
 
 // 화면 전환 함수
@@ -38,6 +38,8 @@ async function checkDuplicate(phone) {
         }
     } catch (error) {
         console.error('중복 체크 오류:', error);
+        console.error('Apps Script URL:', APPS_SCRIPT_URL);
+        // 중복 체크 실패 시에도 계속 진행 (중복 체크는 선택적 기능)
     }
     return false;
 }
@@ -49,9 +51,14 @@ async function getAllMembers() {
         if (response.ok) {
             const data = await response.json();
             return data.success ? data.members : [];
+        } else {
+            console.error('데이터 가져오기 응답 오류:', response.status, response.statusText);
+            console.error('Apps Script URL:', APPS_SCRIPT_URL);
         }
     } catch (error) {
-        console.error('데이터 가져오기 오류:', error);
+        console.error('데이터 가져오기 네트워크 오류:', error);
+        console.error('Apps Script URL:', APPS_SCRIPT_URL);
+        console.error('오류 상세:', error.message);
     }
     return [];
 }
@@ -186,29 +193,54 @@ async function handleFormSubmit() {
         });
 
         // 응답 처리
-        let responseData;
+        let responseData = null;
+        const contentType = response.headers.get('content-type');
+        
         try {
-            responseData = await response.json();
+            if (contentType && contentType.includes('application/json')) {
+                responseData = await response.json();
+            } else {
+                // JSON이 아닌 경우 텍스트로 읽기
+                const text = await response.text();
+                console.log('응답 텍스트:', text);
+                // JSON 형식인지 확인
+                try {
+                    responseData = JSON.parse(text);
+                } catch (e) {
+                    responseData = { success: false, message: text };
+                }
+            }
         } catch (e) {
-            // JSON 파싱 실패 시 텍스트로 시도
-            const text = await response.text();
-            console.log('응답 텍스트:', text);
-            responseData = { success: response.ok, message: text };
+            console.error('응답 파싱 오류:', e);
+            const text = await response.text().catch(() => '응답을 읽을 수 없습니다');
+            responseData = { 
+                success: false, 
+                error: '응답 파싱 오류: ' + e.message,
+                rawResponse: text 
+            };
         }
 
         // 버튼 상태 복원
         submitButton.disabled = false;
         submitButton.textContent = originalButtonText;
 
-        if (response.ok && responseData.success) {
+        // 성공 여부 확인 (Apps Script는 리다이렉트 시 status가 200이 아닐 수 있음)
+        const isSuccess = responseData && responseData.success === true;
+        
+        if (isSuccess) {
             // 성공 시 확인 화면 표시
             showConfirmScreen(data);
-            console.log('데이터 전송 성공:', responseData);
+            console.log('✅ 데이터 전송 성공:', responseData);
         } else {
             // 실패 시 에러 메시지 표시
-            const errorMessage = responseData.error || responseData.message || '알 수 없는 오류가 발생했습니다.';
-            console.error('데이터 전송 실패:', errorMessage);
-            alert('데이터 저장에 실패했습니다.\n오류: ' + errorMessage + '\n\n다시 시도해주세요.');
+            const errorMessage = responseData?.error || responseData?.message || 
+                                (response.status ? `HTTP ${response.status}` : '알 수 없는 오류');
+            console.error('❌ 데이터 전송 실패:', {
+                status: response.status,
+                statusText: response.statusText,
+                response: responseData
+            });
+            alert('데이터 저장에 실패했습니다.\n\n오류: ' + errorMessage + '\n\n브라우저 콘솔(F12)을 확인하거나 다시 시도해주세요.');
         }
     } catch (error) {
         // 버튼 상태 복원
@@ -216,8 +248,20 @@ async function handleFormSubmit() {
         submitButton.disabled = false;
         submitButton.textContent = '제출';
 
-        console.error('제출 오류:', error);
-        alert('제출 중 오류가 발생했습니다.\n오류: ' + error.message + '\n\n네트워크 연결을 확인하고 다시 시도해주세요.');
+        console.error('❌ 제출 오류 발생:', error);
+        console.error('오류 타입:', error.name);
+        console.error('오류 메시지:', error.message);
+        console.error('Apps Script URL:', APPS_SCRIPT_URL);
+        
+        // 더 명확한 에러 메시지
+        let errorMessage = '네트워크 오류가 발생했습니다.';
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = 'Apps Script 서버에 연결할 수 없습니다.\n\n확인 사항:\n1. Apps Script 웹앱이 "모든 사용자" 권한으로 배포되었는지 확인\n2. 인터넷 연결 확인\n3. 브라우저 콘솔(F12)에서 자세한 오류 확인';
+        } else {
+            errorMessage = '오류: ' + (error.message || error.toString());
+        }
+        
+        alert('제출 중 오류가 발생했습니다.\n\n' + errorMessage + '\n\n브라우저 개발자 도구(F12 > Console)를 확인하세요.');
     }
 }
 
@@ -362,5 +406,3 @@ async function downloadCSV() {
     link.click();
     document.body.removeChild(link);
 }
-
-
