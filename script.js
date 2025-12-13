@@ -106,21 +106,79 @@ function setupCarNumberConverter() {
     const carNumberInput = document.getElementById('carNumber');
     if (!carNumberInput) return;
     
+    let isComposing = false; // 한글 입력 중인지 확인
+    
+    // input 이벤트: 실시간 변환
     carNumberInput.addEventListener('input', function(e) {
+        if (isComposing) return; // 한글 입력 중이면 변환하지 않음
+        
         const input = e.target;
         const currentValue = input.value;
-        const cursorPos = input.selectionStart;
         
         // 영문이 포함되어 있으면 한글로 변환
         if (/[a-zA-Z]/.test(currentValue)) {
             const converted = convertEnglishToKorean(currentValue);
             if (converted !== currentValue) {
+                const cursorPos = input.selectionStart;
                 input.value = converted;
                 // 커서 위치 복원
                 setTimeout(() => {
                     const newPos = Math.min(cursorPos, converted.length);
                     input.setSelectionRange(newPos, newPos);
                 }, 0);
+            }
+        }
+    });
+    
+    // compositionstart: 한글 입력 시작
+    carNumberInput.addEventListener('compositionstart', function() {
+        isComposing = true;
+    });
+    
+    // compositionend: 한글 입력 종료
+    carNumberInput.addEventListener('compositionend', function() {
+        isComposing = false;
+        // 입력 종료 후 변환 확인
+        const input = this;
+        const currentValue = input.value;
+        if (/[a-zA-Z]/.test(currentValue)) {
+            const converted = convertEnglishToKorean(currentValue);
+            if (converted !== currentValue) {
+                input.value = converted;
+            }
+        }
+    });
+    
+    // keyup 이벤트: 키 입력 후 변환 (백업)
+    carNumberInput.addEventListener('keyup', function(e) {
+        // 한글 입력 관련 키는 제외
+        if (e.key === 'Process' || isComposing) return;
+        
+        const input = e.target;
+        const currentValue = input.value;
+        
+        if (/[a-zA-Z]/.test(currentValue)) {
+            const converted = convertEnglishToKorean(currentValue);
+            if (converted !== currentValue) {
+                const cursorPos = input.selectionStart;
+                input.value = converted;
+                setTimeout(() => {
+                    const newPos = Math.min(cursorPos, converted.length);
+                    input.setSelectionRange(newPos, newPos);
+                }, 0);
+            }
+        }
+    });
+    
+    // blur 이벤트: 포커스를 잃을 때 최종 변환
+    carNumberInput.addEventListener('blur', function() {
+        const input = this;
+        const currentValue = input.value;
+        
+        if (/[a-zA-Z]/.test(currentValue)) {
+            const converted = convertEnglishToKorean(currentValue);
+            if (converted !== currentValue) {
+                input.value = converted;
             }
         }
     });
