@@ -288,13 +288,14 @@ function checkStudentLogin() {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('problem-list').style.display = 'block';
     
-    // 학생 정보 표시
-    const studentInfo = document.getElementById('student-info');
-    if (studentInfo) {
-        const studentId = localStorage.getItem('studentId');
-        const studentName = localStorage.getItem('studentName');
-        studentInfo.textContent = `${studentName} (${studentId})`;
-    }
+        // 학생 정보 표시
+        const studentInfo = document.getElementById('student-info');
+        if (studentInfo) {
+            const studentId = localStorage.getItem('studentId');
+            const studentName = localStorage.getItem('studentName');
+            const studentClass = localStorage.getItem('studentClass');
+            studentInfo.textContent = `${studentName} (${studentId}) ${studentClass ? `- ${studentClass}반` : ''}`;
+        }
 }
 
 // 관리자 로그인 모달 표시
@@ -557,14 +558,26 @@ async function loadProblemList() {
             throw new Error('Supabase가 초기화되지 않았습니다.');
         }
 
-        // 관리자가 생성한 문제만 가져오기 (샘플 데이터 제외)
-        // assignment가 '과제 1'이고, created_at이 최근에 생성된 문제만 표시
-        // 또는 특정 조건으로 필터링 (예: id가 특정 값 이상인 문제만)
-        const { data, error } = await supabase
+        // 학생의 학반 정보 가져오기
+        const studentClass = localStorage.getItem('studentClass');
+        if (!studentClass) {
+            container.innerHTML = '<p style="text-align: center; color: #e74c3c;">학반 정보를 찾을 수 없습니다. 다시 로그인해주세요.</p>';
+            loading.style.display = 'none';
+            problemList.style.display = 'block';
+            return;
+        }
+
+        // 관리자가 생성한 문제만 가져오기 (학반별 필터링)
+        // assignment가 '과제 1'이고, 학생의 학반과 일치하는 문제만 표시, 최대 5개
+        let query = supabase
             .from('problems')
             .select('*')
             .eq('assignment', '과제 1')
-            .order('id', { ascending: true });
+            .eq('class', studentClass)
+            .order('id', { ascending: true })
+            .limit(5);
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -576,9 +589,9 @@ async function loadProblemList() {
             return;
         }
 
-        container.innerHTML = data.map(problem => `
+        container.innerHTML = data.map((problem, index) => `
             <div class="problem-card" onclick="showProblemDetail(${problem.id})">
-                <h3>${problem.title}</h3>
+                <h3>[연습문제 ${index + 1}] ${problem.title}</h3>
                 <p>${problem.description || ''}</p>
                 <div class="problem-meta">
                     <span>문제 번호: ${problem.id}</span>
@@ -613,12 +626,23 @@ async function showProblemDetail(problemId) {
         problemList.style.display = 'none';
         problemDetail.style.display = 'block';
 
+        // 문제 번호 찾기 (과제 1의 문제 중 몇 번째인지)
+        const { data: allProblems } = await supabase
+            .from('problems')
+            .select('id')
+            .eq('assignment', '과제 1')
+            .order('id', { ascending: true })
+            .limit(5);
+        
+        const problemIndex = allProblems ? allProblems.findIndex(p => p.id === problemId) : -1;
+        const problemNumber = problemIndex >= 0 ? problemIndex + 1 : '';
+
         const deadline = data.deadline ? new Date(data.deadline) : null;
         const now = new Date();
         const isExpired = deadline && now > deadline;
 
         problemInfo.innerHTML = `
-            <h2>${data.title}</h2>
+            <h2>${problemNumber > 0 ? `[연습문제 ${problemNumber}] ` : ''}${data.title}</h2>
             <div class="constraints">
                 <h4>문제 설명</h4>
                 <p>${data.description || '설명이 없습니다.'}</p>
@@ -704,6 +728,7 @@ async function submitCode() {
         const studentId = localStorage.getItem('studentId');
         const studentName = localStorage.getItem('studentName');
         const studentEmail = localStorage.getItem('studentEmail');
+        const studentClass = localStorage.getItem('studentClass') || '';
 
         if (!studentId || !studentName || !studentEmail) {
             alert('로그인 정보가 없습니다. 다시 로그인해주세요.');
@@ -722,6 +747,7 @@ async function submitCode() {
                 student_id: studentId,
                 student_name: studentName,
                 student_email: studentEmail,
+                class: studentClass,  // 학반 정보 추가
                 code: code,
                 status: 'pending',
                 typing_data: JSON.stringify(typingData),
@@ -755,3 +781,4 @@ async function submitCode() {
         submitBtn.textContent = '제출';
     }
 }
+
