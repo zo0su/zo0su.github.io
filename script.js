@@ -544,7 +544,7 @@ async function handleChangePassword() {
     }
 }
 
-// 문제 목록 로드 (과제 1의 문제만 표시)
+// 문제 목록 로드 (학반별 필터링, 과제별 그룹화)
 async function loadProblemList() {
     const loading = document.getElementById('loading');
     const problemList = document.getElementById('problem-list');
@@ -567,17 +567,13 @@ async function loadProblemList() {
             return;
         }
 
-        // 관리자가 생성한 문제만 가져오기 (학반별 필터링)
-        // assignment가 '과제 1'이고, 학생의 학반과 일치하는 문제만 표시, 최대 5개
-        let query = supabase
+        // 학생의 학반과 일치하는 모든 문제 가져오기 (과제별 그룹화)
+        const { data, error } = await supabase
             .from('problems')
             .select('*')
-            .eq('assignment', '과제 1')
             .eq('class', studentClass)
-            .order('id', { ascending: true })
-            .limit(5);
-
-        const { data, error } = await query;
+            .order('assignment', { ascending: true })
+            .order('id', { ascending: true });
 
         if (error) throw error;
 
@@ -585,20 +581,42 @@ async function loadProblemList() {
         problemList.style.display = 'block';
 
         if (!data || data.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: #666;">과제 1에 등록된 문제가 없습니다.</p>';
+            container.innerHTML = '<p style="text-align: center; color: #666;">등록된 문제가 없습니다.</p>';
             return;
         }
 
-        container.innerHTML = data.map((problem, index) => `
-            <div class="problem-card" onclick="showProblemDetail(${problem.id})">
-                <h3>[연습문제 ${index + 1}] ${problem.title}</h3>
-                <p>${problem.description || ''}</p>
-                <div class="problem-meta">
-                    <span>문제 번호: ${problem.id}</span>
-                    <span>난이도: ${problem.difficulty || 'N/A'}</span>
+        // 과제별로 그룹화
+        const problemsByAssignment = {};
+        data.forEach(problem => {
+            const assignment = problem.assignment || '기타';
+            if (!problemsByAssignment[assignment]) {
+                problemsByAssignment[assignment] = [];
+            }
+            problemsByAssignment[assignment].push(problem);
+        });
+
+        // 과제별로 HTML 생성
+        let html = '';
+        Object.keys(problemsByAssignment).sort().forEach(assignment => {
+            const problems = problemsByAssignment[assignment];
+            html += `
+                <div class="assignment-group" style="margin-bottom: 30px;">
+                    <h2 style="color: #4a90e2; border-bottom: 2px solid #4a90e2; padding-bottom: 10px; margin-bottom: 15px;">${assignment}</h2>
+                    ${problems.map((problem, index) => `
+                        <div class="problem-card" onclick="showProblemDetail(${problem.id})" style="margin-bottom: 15px;">
+                            <h3>${problem.title}</h3>
+                            <p>${problem.description || ''}</p>
+                            <div class="problem-meta">
+                                <span>문제 번호: ${problem.id}</span>
+                                <span>난이도: ${problem.difficulty || 'N/A'}</span>
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
-            </div>
-        `).join('');
+            `;
+        });
+
+        container.innerHTML = html;
     } catch (error) {
         console.error('문제 목록 로드 실패:', error);
         loading.style.display = 'none';
@@ -626,23 +644,12 @@ async function showProblemDetail(problemId) {
         problemList.style.display = 'none';
         problemDetail.style.display = 'block';
 
-        // 문제 번호 찾기 (과제 1의 문제 중 몇 번째인지)
-        const { data: allProblems } = await supabase
-            .from('problems')
-            .select('id')
-            .eq('assignment', '과제 1')
-            .order('id', { ascending: true })
-            .limit(5);
-        
-        const problemIndex = allProblems ? allProblems.findIndex(p => p.id === problemId) : -1;
-        const problemNumber = problemIndex >= 0 ? problemIndex + 1 : '';
-
         const deadline = data.deadline ? new Date(data.deadline) : null;
         const now = new Date();
         const isExpired = deadline && now > deadline;
 
         problemInfo.innerHTML = `
-            <h2>${problemNumber > 0 ? `[연습문제 ${problemNumber}] ` : ''}${data.title}</h2>
+            <h2>${data.assignment ? `[${data.assignment}] ` : ''}${data.title}</h2>
             <div class="constraints">
                 <h4>문제 설명</h4>
                 <p>${data.description || '설명이 없습니다.'}</p>
@@ -781,4 +788,3 @@ async function submitCode() {
         submitBtn.textContent = '제출';
     }
 }
-
