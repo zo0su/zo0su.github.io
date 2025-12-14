@@ -633,7 +633,6 @@ async function registerProblem() {
 
         alert('문제가 등록되었습니다!');
         document.getElementById('problem-form').reset();
-        document.getElementById('problem-assignment').value = '과제 1'; // 기본값 복원
         document.getElementById('problem-class').value = ''; // 학반 선택 초기화
     } catch (error) {
         console.error('문제 등록 실패:', error);
