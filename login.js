@@ -158,6 +158,7 @@ async function handleLogin() {
         localStorage.setItem('studentId', data.student_id);
         localStorage.setItem('studentName', data.name);
         localStorage.setItem('studentEmail', data.email);
+        localStorage.setItem('studentClass', data.class || '');  // 학반 정보 저장
 
         // main.html로 리다이렉트
         window.location.href = 'main.html';
@@ -165,6 +166,18 @@ async function handleLogin() {
         console.error('로그인 실패:', error);
         alert('로그인 중 오류가 발생했습니다: ' + error.message);
     }
+}
+
+// 학번에서 학반 추출 함수
+// 학번 형식: 2620101 = 26(학년도) 2(학년) 01(반) 01(번호)
+// 반환 형식: "2-1" (학년-반)
+function extractClassFromStudentId(studentId) {
+    if (!/^[0-9]{7}$/.test(studentId)) {
+        return null;
+    }
+    const grade = studentId.substring(2, 3);  // 3번째 자리 (학년)
+    const classNum = parseInt(studentId.substring(3, 5));  // 4-5번째 자리 (반)
+    return `${grade}-${classNum}`;
 }
 
 // 회원가입 처리
@@ -177,6 +190,13 @@ async function handleSignup() {
 
     if (!/^[0-9]{7}$/.test(studentId)) {
         alert('학번은 7자리 숫자여야 합니다.');
+        return;
+    }
+
+    // 학반 추출
+    const studentClass = extractClassFromStudentId(studentId);
+    if (!studentClass) {
+        alert('학번 형식이 올바르지 않습니다.');
         return;
     }
 
@@ -319,3 +339,4 @@ async function handleAdminLoginModal() {
         alert('비밀번호가 올바르지 않습니다.');
     }
 }
+
