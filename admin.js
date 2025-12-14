@@ -76,11 +76,28 @@ function showTab(tabName) {
     });
 
     // 선택된 탭 활성화
-    event.target.classList.add('active');
+    if (event && event.target) {
+        event.target.classList.add('active');
+    } else {
+        // 프로그래밍 방식 호출인 경우
+        const tabBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => 
+            btn.getAttribute('onclick')?.includes(tabName)
+        );
+        if (tabBtn) tabBtn.classList.add('active');
+    }
+    
     const selectedTab = document.getElementById(tabName);
     if (selectedTab) {
         selectedTab.classList.add('active');
         selectedTab.style.display = 'block';
+    }
+
+    // 탭별 데이터 새로고침
+    if (tabName === 'member-management') {
+        loadPendingStudents();
+        loadStudents();
+    } else if (tabName === 'submission-review') {
+        loadSubmissions();
     }
 }
 
@@ -134,6 +151,14 @@ function showTab(tabName) {
     if (selectedTab) {
         selectedTab.classList.add('active');
         selectedTab.style.display = 'block';
+    }
+
+    // 탭별 데이터 새로고침
+    if (tabName === 'member-management') {
+        loadPendingStudents();
+        loadStudents();
+    } else if (tabName === 'submission-review') {
+        loadSubmissions();
     }
 }
 
@@ -314,23 +339,43 @@ async function uploadStudentCSV() {
 // 회원가입 승인 대기 목록 로드
 async function loadPendingStudents() {
     const container = document.getElementById('pending-students-container');
+    
+    if (!container) {
+        console.error('pending-students-container를 찾을 수 없습니다.');
+        return;
+    }
 
     try {
+        container.innerHTML = '<p style="text-align: center; color: #666;">로딩 중...</p>';
+
         const { data, error } = await supabase
             .from('students')
             .select('*')
             .eq('approved', false)
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error('데이터 로드 오류:', error);
+            throw error;
+        }
+
+        console.log('승인 대기 학생 데이터:', data);
 
         if (!data || data.length === 0) {
             container.innerHTML = '<p style="text-align: center; color: #666;">승인 대기 중인 학생이 없습니다.</p>';
             return;
         }
 
+        // 데이터 이스케이프 처리
+        const escapeHtml = (text) => {
+            if (text === null || text === undefined) return '';
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            return div.innerHTML;
+        };
+
         container.innerHTML = `
-            <table style="width: 100%; border-collapse: collapse;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
                 <thead>
                     <tr style="background: #f39c12; color: white;">
                         <th style="padding: 10px; border: 1px solid #ddd;">학번</th>
@@ -343,15 +388,15 @@ async function loadPendingStudents() {
                 <tbody>
                     ${data.map(student => `
                         <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd;">${student.student_id}</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;">${student.name}</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;">${student.email}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(student.student_id || '')}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(student.name || '')}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(student.email || '')}</td>
                             <td style="padding: 10px; border: 1px solid #ddd;">
-                                ${new Date(student.created_at).toLocaleString('ko-KR')}
+                                ${student.created_at ? new Date(student.created_at).toLocaleString('ko-KR') : 'N/A'}
                             </td>
                             <td style="padding: 10px; border: 1px solid #ddd;">
-                                <button class="btn btn-primary" onclick="approveStudent('${student.student_id}')" style="padding: 5px 10px; font-size: 12px; background: #27ae60;">승인</button>
-                                <button class="btn btn-secondary" onclick="rejectStudent('${student.student_id}')" style="padding: 5px 10px; font-size: 12px; margin-left: 5px;">거부</button>
+                                <button class="btn btn-primary" onclick="approveStudent('${escapeHtml(student.student_id || '')}')" style="padding: 5px 10px; font-size: 12px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer;">승인</button>
+                                <button class="btn btn-secondary" onclick="rejectStudent('${escapeHtml(student.student_id || '')}')" style="padding: 5px 10px; font-size: 12px; margin-left: 5px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;">거부</button>
                             </td>
                         </tr>
                     `).join('')}
@@ -360,7 +405,7 @@ async function loadPendingStudents() {
         `;
     } catch (error) {
         console.error('승인 대기 목록 로드 실패:', error);
-        container.innerHTML = '<p style="text-align: center; color: #e74c3c;">승인 대기 목록을 불러오는 중 오류가 발생했습니다.</p>';
+        container.innerHTML = `<p style="text-align: center; color: #e74c3c;">승인 대기 목록을 불러오는 중 오류가 발생했습니다.<br>오류: ${error.message}</p>`;
     }
 }
 
