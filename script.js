@@ -755,4 +755,3 @@ async function submitCode() {
         submitBtn.textContent = '제출';
     }
 }
-
