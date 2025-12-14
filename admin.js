@@ -206,6 +206,16 @@ async function handleAdminLogin() {
     }
 }
 
+// 학번에서 학반 추출 함수
+function extractClassFromStudentId(studentId) {
+    if (!/^[0-9]{7}$/.test(studentId)) {
+        return null;
+    }
+    const grade = studentId.substring(2, 3);  // 3번째 자리 (학년)
+    const classNum = parseInt(studentId.substring(3, 5));  // 4-5번째 자리 (반)
+    return `${grade}-${classNum}`;
+}
+
 // 학생 등록
 async function registerStudent() {
     const studentId = document.getElementById('student-id').value;
@@ -224,6 +234,13 @@ async function registerStudent() {
         return;
     }
 
+    // 학반 추출
+    const studentClass = extractClassFromStudentId(studentId);
+    if (!studentClass) {
+        alert('학번 형식이 올바르지 않습니다.');
+        return;
+    }
+
     try {
         const { data, error } = await supabase
             .from('students')
@@ -232,6 +249,7 @@ async function registerStudent() {
                 password: 'bgs-1111', // 초기 비밀번호
                 name: name,
                 email: email,
+                class: studentClass,  // 학반 자동 분류
                 approved: true, // 관리자가 직접 등록하는 경우 자동 승인
                 password_changed: false,
                 created_at: new Date().toISOString()
@@ -577,6 +595,7 @@ async function deleteStudent(studentId, studentName) {
 // 문제 등록
 async function registerProblem() {
     const assignment = document.getElementById('problem-assignment').value;
+    const problemClass = document.getElementById('problem-class').value;
     const title = document.getElementById('problem-title').value;
     const description = document.getElementById('problem-description').value;
     const constraints = document.getElementById('problem-constraints').value;
@@ -586,11 +605,17 @@ async function registerProblem() {
     const deadline = document.getElementById('problem-deadline').value;
     const allowLate = document.getElementById('problem-allow-late').value === 'true';
 
+    if (!problemClass) {
+        alert('학반을 선택해주세요.');
+        return;
+    }
+
     try {
         const { data, error } = await supabase
             .from('problems')
             .insert({
                 assignment: assignment,
+                class: problemClass,  // 학반 정보 추가
                 title: title,
                 description: description,
                 constraints: constraints,
@@ -609,6 +634,7 @@ async function registerProblem() {
         alert('문제가 등록되었습니다!');
         document.getElementById('problem-form').reset();
         document.getElementById('problem-assignment').value = '과제 1'; // 기본값 복원
+        document.getElementById('problem-class').value = ''; // 학반 선택 초기화
     } catch (error) {
         console.error('문제 등록 실패:', error);
         alert('문제 등록 중 오류가 발생했습니다: ' + error.message);
@@ -669,13 +695,21 @@ async function uploadCSV() {
 // 제출 기록 로드
 async function loadSubmissions() {
     const container = document.getElementById('submissions-container');
+    const classFilter = document.getElementById('submission-class-filter')?.value || '';
 
     try {
-        const { data, error } = await supabase
+        let query = supabase
             .from('submissions')
-            .select('*, problems(title)')
+            .select('*, problems(title, class)')
             .order('created_at', { ascending: false })
             .limit(50);
+
+        // 학반 필터 적용
+        if (classFilter) {
+            query = query.eq('class', classFilter);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -690,6 +724,7 @@ async function loadSubmissions() {
                     <tr style="background: #4a90e2; color: white;">
                         <th style="padding: 10px; border: 1px solid #ddd;">ID</th>
                         <th style="padding: 10px; border: 1px solid #ddd;">학생</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">학반</th>
                         <th style="padding: 10px; border: 1px solid #ddd;">문제</th>
                         <th style="padding: 10px; border: 1px solid #ddd;">상태</th>
                         <th style="padding: 10px; border: 1px solid #ddd;">제출 시간</th>
@@ -704,6 +739,7 @@ async function loadSubmissions() {
                                 ${sub.student_name} (${sub.student_id})<br>
                                 <small>${sub.student_email}</small>
                             </td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${sub.class || 'N/A'}</td>
                             <td style="padding: 10px; border: 1px solid #ddd;">${sub.problems?.title || 'N/A'}</td>
                             <td style="padding: 10px; border: 1px solid #ddd;">
                                 <span class="result-${sub.status}">${getStatusText(sub.status)}</span>
