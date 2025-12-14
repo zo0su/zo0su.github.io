@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeJudge - 문제 목록</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>CodeJudge</h1>
+            <nav>
+                <a href="main.html" class="nav-link active">문제 목록</a>
+                <a href="#" class="nav-link" id="admin-link" onclick="showAdminLogin(); return false;">관리자</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="loading" class="loading">로딩 중...</div>
+        
+        <div id="problem-list" class="problem-list" style="display: none;">
+            <div style="text-align: right; margin-bottom: 20px;">
+                <span id="student-info" style="margin-right: 15px;"></span>
+                <button id="logout-student-btn" class="btn btn-secondary">로그아웃</button>
+            </div>
+            <h2>문제 목록</h2>
+            <div id="problems-container"></div>
+        </div>
+
+        <div id="problem-detail" class="problem-detail" style="display: none;">
+            <button id="back-btn" class="btn btn-secondary">목록으로</button>
+            <div id="problem-info"></div>
+            <div class="editor-container">
+                <div class="editor-header">
+                    <h3>코드 작성</h3>
+                    <div class="editor-controls">
+                        <button id="submit-btn" class="btn btn-primary">제출</button>
+                    </div>
+                </div>
+                <div id="editor" class="code-editor"></div>
+                <div id="typing-graph-container" class="typing-graph-container">
+                    <h4>타이핑 속도 모니터링</h4>
+                    <canvas id="typing-graph"></canvas>
+                </div>
+                <div id="result-container" class="result-container"></div>
+            </div>
+        </div>
+
+        <!-- 관리자 로그인 모달 -->
+        <div id="admin-login-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close" onclick="closeAdminLogin()">&times;</span>
+                <h2>관리자 로그인</h2>
+                <form id="admin-login-modal-form">
+                    <div class="form-group">
+                        <label>비밀번호</label>
+                        <input type="password" id="admin-password-modal" placeholder="관리자 비밀번호를 입력하세요" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">로그인</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAdminLogin()" style="margin-left: 10px;">취소</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 CodeJudge. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+

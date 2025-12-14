@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeJudge - 관리자</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>CodeJudge</h1>
+            <nav>
+                <a href="index.html" class="nav-link">문제 목록</a>
+                <a href="admin.html" class="nav-link active">관리자</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- 관리자 로그인 -->
+        <div id="admin-login" class="admin-login" style="display: block;">
+            <div class="login-box">
+                <h2>관리자 로그인</h2>
+                <form id="admin-login-form">
+                    <div class="form-group">
+                        <label>비밀번호</label>
+                        <input type="password" id="admin-password" placeholder="관리자 비밀번호를 입력하세요" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">로그인</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="admin-container" class="admin-container" style="display: none;">
+            <div style="text-align: right; margin-bottom: 20px;">
+                <button id="logout-btn" class="btn btn-secondary">로그아웃</button>
+            </div>
+            <h2>관리자 페이지</h2>
+
+            <!-- 회원 관리 탭 -->
+            <div class="admin-tabs">
+                <button class="tab-btn active" onclick="showTab('member-management')">회원 관리</button>
+                <button class="tab-btn" onclick="showTab('problem-management')">문제 관리</button>
+                <button class="tab-btn" onclick="showTab('submission-review')">제출 검토</button>
+            </div>
+
+            <!-- 회원 관리 탭 내용 -->
+            <div id="member-management" class="tab-content active">
+                <!-- 회원 등록 -->
+                <div class="admin-section">
+                    <h3>회원 등록</h3>
+                    <form id="student-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>학번 (7자리 숫자)</label>
+                                <input type="text" id="student-id" pattern="[0-9]{7}" maxlength="7" required>
+                            </div>
+                            <div class="form-group">
+                                <label>성명</label>
+                                <input type="text" id="student-name" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>이메일 주소</label>
+                            <input type="email" id="student-email" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">회원 등록</button>
+                    </form>
+                </div>
+
+                <!-- 회원 CSV 일괄 등록 -->
+                <div class="admin-section">
+                    <h3>회원 CSV 일괄 등록</h3>
+                    <div class="form-group">
+                        <label>CSV 파일 선택</label>
+                        <input type="file" id="student-csv-file" accept=".csv">
+                        <p style="margin-top: 10px; color: #666; font-size: 12px;">
+                            CSV 형식: student_id,name,email<br>
+                            예시: 1234567,홍길동,hong@example.com
+                        </p>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="uploadStudentCSV()">CSV 업로드</button>
+                </div>
+
+                <!-- 회원가입 승인 대기 목록 -->
+                <div class="admin-section">
+                    <h3>회원가입 승인 대기</h3>
+                    <div id="pending-students-container">
+                        <p style="text-align: center; color: #666;">로딩 중...</p>
+                    </div>
+                </div>
+
+                <!-- 회원 목록 및 관리 -->
+                <div class="admin-section">
+                    <h3>회원 목록</h3>
+                    <div id="students-container">
+                        <p style="text-align: center; color: #666;">로딩 중...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 문제 관리 탭 내용 -->
+            <div id="problem-management" class="tab-content" style="display: none;">
+
+                <!-- 문제 개별 등록 -->
+                <div class="admin-section">
+                    <h3>문제 등록</h3>
+                    <form id="problem-form">
+                        <div class="form-group">
+                            <label>과제</label>
+                            <input type="text" id="problem-assignment" value="과제 1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>문제 제목</label>
+                            <input type="text" id="problem-title" required>
+                        </div>
+                        <div class="form-group">
+                            <label>문제 설명</label>
+                            <textarea id="problem-description" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>제약 조건</label>
+                            <textarea id="problem-constraints"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>입력 형식</label>
+                                <textarea id="problem-input-format"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>출력 형식</label>
+                                <textarea id="problem-output-format"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>난이도</label>
+                                <input type="text" id="problem-difficulty" placeholder="예: Easy, Medium, Hard">
+                            </div>
+                            <div class="form-group">
+                                <label>제출 기한</label>
+                                <input type="datetime-local" id="problem-deadline">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>시간 종료 후 제출 승인 여부</label>
+                            <select id="problem-allow-late">
+                                <option value="false">불가</option>
+                                <option value="true">가능</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">문제 등록</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 제출 검토 탭 내용 -->
+            <div id="submission-review" class="tab-content" style="display: none;">
+                <!-- 제출 기록 확인 -->
+                <div class="admin-section">
+                    <h3>제출 기록</h3>
+                    <div id="submissions-container">
+                        <p style="text-align: center; color: #666;">로딩 중...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 CodeJudge. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
+
